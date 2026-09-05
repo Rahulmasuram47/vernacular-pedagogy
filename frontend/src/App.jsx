@@ -25,7 +25,9 @@ export default function App() {
       setHindiResult(data.hindi ?? text);
       setSantaliResult(data.santali ?? "");
       setStatus(
-        "अनुवाद तैयार है। (अभी केवल परीक्षण — असली अनुवाद बाद में जुड़ेगा)"
+        data.confidence === "exact"
+    ? "अनुवाद तैयार है। पूर्ण मिलान।"
+    : "अनुवाद तैयार है। आंशिक मिलान।"
       );
     } catch (err) {
       setStatus(
@@ -58,7 +60,13 @@ export default function App() {
   return (
     <div className="page">
       <header className="header">
-        <h1>हिंदी → संताली अनुवाद</h1>
+        <div className="header-row">
+          <h1>हिंदी → संताली अनुवाद</h1>
+          <p className="offline-ready" title="This badge is built into the page. It does not check the internet.">
+            <span className="offline-dot" aria-hidden="true" />
+            Offline Ready
+          </p>
+        </div>
         <p className="lang-note">भाषा: संताली (ओल चिकी)</p>
       </header>
 

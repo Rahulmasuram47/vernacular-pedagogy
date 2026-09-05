@@ -17,6 +17,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Offline guarantee: POST /translate must never call the public internet.
+# The handler in routes/translate.py only runs services.translator, which
+# reads data/santali_dictionary.json from disk. Do not import requests,
+# httpx, urllib, or any cloud translation client on that path.
 app.include_router(translate_router)
 app.include_router(worksheet_router)
 
