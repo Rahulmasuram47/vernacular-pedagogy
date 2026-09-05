@@ -1,22 +1,25 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+from services.worksheet import generate_worksheet, list_categories
 
 
 router = APIRouter()
 
 
 class WorksheetRequest(BaseModel):
-    hindi: str = ""
-    santali: str = ""
+    category: str
+
+
+@router.get("/worksheet/categories")
+def get_categories():
+    return {"categories": list_categories()}
 
 
 @router.post("/worksheet")
-def worksheet(payload: WorksheetRequest):
-    """Stub: return a placeholder bilingual worksheet payload."""
-    return {
-        "title": "द्विभाषी कार्यपत्रक",
-        "hindi": payload.hindi,
-        "santali": payload.santali,
-        "items": [],
-        "stub": True,
-    }
+def create_worksheet(payload: WorksheetRequest):
+    try:
+        result = generate_worksheet(payload.category)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return result

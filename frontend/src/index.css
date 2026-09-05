@@ -180,3 +180,38 @@ body {
   50% { opacity: 0.6; }
   100% { opacity: 1; }
 }
+.worksheet-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+}
+
+.worksheet-table th,
+.worksheet-table td {
+  border: 1px solid #999;
+  padding: 10px;
+  text-align: left;
+  font-size: 1.15rem;
+}
+
+.worksheet-table th {
+  background: #eee;
+}
+
+.practice-blank {
+  min-width: 140px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .worksheet {
+    border: none;
+  }
+
+  body {
+    background: #fff;
+  }
+}

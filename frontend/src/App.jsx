@@ -1,6 +1,14 @@
-import { useState, useCallback } from "react";
-import { callTranslate } from "./api.js";
+import { useState, useCallback, useEffect } from "react";
+import { callTranslate, fetchWorksheetCategories, callWorksheet } from "./api.js";
 import MicButton from "./components/MicButton.jsx";
+
+const CATEGORY_LABELS = {
+  number: "संख्याएँ",
+  day: "सप्ताह के दिन",
+  greeting: "अभिवादन",
+  classroom: "कक्षा के निर्देश",
+  noun: "सामान्य शब्द",
+};
 
 export default function App() {
   const [hindiText, setHindiText] = useState("");
@@ -9,6 +17,24 @@ export default function App() {
   const [status, setStatus] = useState("");
   const [worksheet, setWorksheet] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [worksheetBusy, setWorksheetBusy] = useState(false);
+
+  useEffect(() => {
+    fetchWorksheetCategories()
+      .then((data) => {
+        const list = data.categories ?? [];
+        setCategories(list);
+        if (list.length > 0) setSelectedCategory(list[0]);
+      })
+      .catch(() => {
+        setStatus(
+          "विषय सूची लोड नहीं हो पाई। बैकएंड चल रहा है या नहीं, जाँचें।"
+        );
+      });
+  }, []);
 
   async function handleTranslate() {
     const text = hindiText.trim();
@@ -51,17 +77,30 @@ export default function App() {
     setStatus(message);
   }, []);
 
-  function handleWorksheet() {
-    if (!hindiResult && !santaliResult) {
-      setStatus("पहले अनुवाद करें, फिर कार्यपत्रक बनाएँ।");
+  async function handleGenerateWorksheet() {
+    if (!selectedCategory) {
+      setStatus("कृपया पहले एक विषय चुनें।");
       return;
     }
 
-    setWorksheet({
-      hindi: hindiResult,
-      santali: santaliResult,
-    });
-    setStatus("कार्यपत्रक तैयार है। (अभी केवल परीक्षण)");
+    setWorksheetBusy(true);
+    setStatus("कार्यपत्रक बन रहा है...");
+
+    try {
+      const data = await callWorksheet(selectedCategory);
+      setWorksheet(data);
+      setStatus("कार्यपत्रक तैयार है।");
+    } catch (err) {
+      setStatus(
+        "कार्यपत्रक नहीं बन पाया। बैकएंड चल रहा है या नहीं, जाँचें।"
+      );
+    } finally {
+      setWorksheetBusy(false);
+    }
+  }
+
+  function handlePrint() {
+    window.print();
   }
 
   return (
@@ -77,7 +116,7 @@ export default function App() {
         <p className="lang-note">भाषा: संताली (ओल चिकी)</p>
       </header>
 
-      <section className="card">
+      <section className="card no-print">
         <label htmlFor="hindi-input" className="label">
           हिंदी में लिखें
         </label>
@@ -107,7 +146,7 @@ export default function App() {
         </div>
       </section>
 
-      <section className="card">
+      <section className="card no-print">
         <h2>परिणाम</h2>
         <div className="bilingual">
           <div className="pane">
@@ -119,29 +158,69 @@ export default function App() {
             <p className="result-text santali">{santaliResult || "—"}</p>
           </div>
         </div>
+      </section>
+
+      <section className="card no-print">
+        <h2>द्विभाषी कार्यपत्रक बनाएँ</h2>
+        <label htmlFor="topic-select" className="label">
+          विषय चुनें
+        </label>
+        <select
+          id="topic-select"
+          className="input"
+          value={selectedCategory}
+          onChange={(e) => setSelectedCategory(e.target.value)}
+        >
+          {categories.map((cat) => (
+            <option key={cat} value={cat}>
+              {CATEGORY_LABELS[cat] ?? cat}
+            </option>
+          ))}
+        </select>
 
         <button
           type="button"
           className="btn btn-secondary"
-          onClick={handleWorksheet}
+          onClick={handleGenerateWorksheet}
+          disabled={worksheetBusy}
         >
-          कार्यपत्रक बनाएँ
+          {worksheetBusy ? "कार्यपत्रक बन रहा है..." : "कार्यपत्रक बनाएँ"}
         </button>
       </section>
 
       {worksheet && (
         <section className="card worksheet">
-          <h2>द्विभाषी कार्यपत्रक</h2>
-          <p>
-            <strong>हिंदी:</strong> {worksheet.hindi}
-          </p>
-          <p className="santali">
-            <strong>संताली:</strong> {worksheet.santali}
-          </p>
+          <h2>{worksheet.title}</h2>
+          <table className="worksheet-table">
+            <thead>
+              <tr>
+                <th>हिंदी</th>
+                <th>संताली</th>
+                <th>अभ्यास (लिखें)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {worksheet.items.map((item, idx) => (
+                <tr key={idx}>
+                  <td>{item.hindi}</td>
+                  <td className="santali">{item.santali}</td>
+                  <td className="practice-blank"></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <button
+            type="button"
+            className="btn btn-secondary no-print"
+            onClick={handlePrint}
+          >
+            प्रिंट करें / PDF सहेजें
+          </button>
         </section>
       )}
 
-      {status && <p className="status">{status}</p>}
+      {status && <p className="status no-print">{status}</p>}
     </div>
   );
 }
