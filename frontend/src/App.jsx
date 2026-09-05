@@ -1,6 +1,14 @@
 import { useState, useCallback, useEffect } from "react";
 import { callTranslate, fetchWorksheetCategories, callWorksheet } from "./api.js";
 import MicButton from "./components/MicButton.jsx";
+import {
+  getHistory,
+  addToHistory,
+  clearHistory,
+  getSavedWorksheets,
+  saveWorksheet,
+  deleteSavedWorksheet,
+} from "./storage.js";
 
 const CATEGORY_LABELS = {
   number: "संख्याएँ",
@@ -22,6 +30,11 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [worksheetBusy, setWorksheetBusy] = useState(false);
 
+  const [history, setHistory] = useState([]);
+  const [savedWorksheets, setSavedWorksheets] = useState([]);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showSaved, setShowSaved] = useState(false);
+
   useEffect(() => {
     fetchWorksheetCategories()
       .then((data) => {
@@ -34,6 +47,9 @@ export default function App() {
           "विषय सूची लोड नहीं हो पाई। बैकएंड चल रहा है या नहीं, जाँचें।"
         );
       });
+
+    setHistory(getHistory());
+    setSavedWorksheets(getSavedWorksheets());
   }, []);
 
   async function handleTranslate() {
@@ -60,6 +76,9 @@ export default function App() {
       const matchLabel =
         data.confidence === "exact" ? "पूर्ण मिलान" : "आंशिक मिलान";
       setStatus(`अनुवाद तैयार है। ${matchLabel} (${elapsedMs} ms)`);
+
+      const updatedHistory = addToHistory(data);
+      setHistory(updatedHistory);
     } catch (err) {
       setStatus(
         "सर्वर से जुड़ नहीं पाए। बैकएंड चल रहा है या नहीं, जाँचें।"
@@ -101,6 +120,37 @@ export default function App() {
 
   function handlePrint() {
     window.print();
+  }
+
+  function handleSaveWorksheet() {
+    if (!worksheet) return;
+    const updated = saveWorksheet(worksheet);
+    setSavedWorksheets(updated);
+    setStatus("कार्यपत्रक सहेजा गया।");
+  }
+
+  function handleDeleteSaved(savedAt) {
+    const updated = deleteSavedWorksheet(savedAt);
+    setSavedWorksheets(updated);
+  }
+
+  function handleClearHistory() {
+    clearHistory();
+    setHistory([]);
+  }
+
+  function handleReuseHistoryItem(item) {
+    setHindiText(item.hindi);
+    setHindiResult(item.hindi);
+    setSantaliResult(item.santali);
+    setShowHistory(false);
+    setStatus("इतिहास से भरा गया।");
+  }
+
+  function handleOpenSavedWorksheet(saved) {
+    setWorksheet(saved);
+    setShowSaved(false);
+    setStatus("सहेजा गया कार्यपत्रक खोला गया।");
   }
 
   return (
@@ -158,6 +208,44 @@ export default function App() {
             <p className="result-text santali">{santaliResult || "—"}</p>
           </div>
         </div>
+
+        <button
+          type="button"
+          className="btn btn-link"
+          onClick={() => setShowHistory((v) => !v)}
+        >
+          {showHistory ? "इतिहास छिपाएँ" : `इतिहास देखें (${history.length})`}
+        </button>
+
+        {showHistory && (
+          <div className="history-panel">
+            {history.length === 0 && <p>अभी कोई इतिहास नहीं है।</p>}
+            {history.map((item, idx) => (
+              <div key={idx} className="history-item">
+                <div>
+                  <strong>{item.hindi}</strong>
+                  <span className="santali"> — {item.santali}</span>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-small"
+                  onClick={() => handleReuseHistoryItem(item)}
+                >
+                  फिर से उपयोग करें
+                </button>
+              </div>
+            ))}
+            {history.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-small btn-danger"
+                onClick={handleClearHistory}
+              >
+                इतिहास मिटाएँ
+              </button>
+            )}
+          </div>
+        )}
       </section>
 
       <section className="card no-print">
@@ -186,6 +274,47 @@ export default function App() {
         >
           {worksheetBusy ? "कार्यपत्रक बन रहा है..." : "कार्यपत्रक बनाएँ"}
         </button>
+
+        <button
+          type="button"
+          className="btn btn-link"
+          onClick={() => setShowSaved((v) => !v)}
+        >
+          {showSaved
+            ? "सहेजे गए कार्यपत्रक छिपाएँ"
+            : `सहेजे गए कार्यपत्रक देखें (${savedWorksheets.length})`}
+        </button>
+
+        {showSaved && (
+          <div className="history-panel">
+            {savedWorksheets.length === 0 && (
+              <p>अभी कोई कार्यपत्रक सहेजा नहीं गया।</p>
+            )}
+            {savedWorksheets.map((saved) => (
+              <div key={saved.savedAt} className="history-item">
+                <div>
+                  <strong>{saved.title}</strong>
+                </div>
+                <div>
+                  <button
+                    type="button"
+                    className="btn btn-small"
+                    onClick={() => handleOpenSavedWorksheet(saved)}
+                  >
+                    खोलें
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-small btn-danger"
+                    onClick={() => handleDeleteSaved(saved.savedAt)}
+                  >
+                    हटाएँ
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {worksheet && (
@@ -210,13 +339,14 @@ export default function App() {
             </tbody>
           </table>
 
-          <button
-            type="button"
-            className="btn btn-secondary no-print"
-            onClick={handlePrint}
-          >
-            प्रिंट करें / PDF सहेजें
-          </button>
+          <div className="actions no-print">
+            <button type="button" className="btn btn-secondary" onClick={handlePrint}>
+              प्रिंट करें / PDF सहेजें
+            </button>
+            <button type="button" className="btn btn-secondary" onClick={handleSaveWorksheet}>
+              सहेजें
+            </button>
+          </div>
         </section>
       )}
 
