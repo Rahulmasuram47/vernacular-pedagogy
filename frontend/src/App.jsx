@@ -209,6 +209,8 @@ export default function App() {
           </div>
         </div>
 
+        <hr className="section-divider" />
+
         <button
           type="button"
           className="btn btn-link"
@@ -274,6 +276,8 @@ export default function App() {
         >
           {worksheetBusy ? "कार्यपत्रक बन रहा है..." : "कार्यपत्रक बनाएँ"}
         </button>
+
+        <hr className="section-divider" />
 
         <button
           type="button"
