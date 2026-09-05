@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.translate import router as translate_router
 from routes.worksheet import router as worksheet_router
 
+app = FastAPI(title="Vernacular Pedagogy API")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
