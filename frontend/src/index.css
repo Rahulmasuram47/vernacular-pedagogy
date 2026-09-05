@@ -165,3 +165,14 @@ body {
     grid-template-columns: 1fr;
   }
 }
+.btn-mic-active {
+  background-color: #d32f2f;
+  color: white;
+  animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
+}

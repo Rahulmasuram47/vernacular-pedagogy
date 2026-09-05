@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { callTranslate } from "./api.js";
+import MicButton from "./components/MicButton.jsx";
 
 export default function App() {
   const [hindiText, setHindiText] = useState("");
@@ -26,8 +27,8 @@ export default function App() {
       setSantaliResult(data.santali ?? "");
       setStatus(
         data.confidence === "exact"
-    ? "अनुवाद तैयार है। पूर्ण मिलान।"
-    : "अनुवाद तैयार है। आंशिक मिलान।"
+          ? "अनुवाद तैयार है। पूर्ण मिलान।"
+          : "अनुवाद तैयार है। आंशिक मिलान।"
       );
     } catch (err) {
       setStatus(
@@ -38,11 +39,15 @@ export default function App() {
     }
   }
 
-  function handleMicPlaceholder() {
-    setStatus(
-      "माइक्रोफ़ोन अभी तैयार नहीं है। बाद में आवाज़ से लिखना जुड़ेगा।"
-    );
-  }
+  // Called by MicButton when speech recognition returns a transcript.
+  const handleMicResult = useCallback((transcript) => {
+    setHindiText(transcript);
+  }, []);
+
+  // Called by MicButton for status messages (listening, errors, etc).
+  const handleMicStatus = useCallback((message) => {
+    setStatus(message);
+  }, []);
 
   function handleWorksheet() {
     if (!hindiResult && !santaliResult) {
@@ -84,14 +89,11 @@ export default function App() {
         />
 
         <div className="actions">
-          <button
-            type="button"
-            className="btn btn-mic"
-            onClick={handleMicPlaceholder}
-            aria-label="माइक्रोफ़ोन"
-          >
-            🎤 माइक
-          </button>
+          <MicButton
+            onResult={handleMicResult}
+            onStatus={handleMicStatus}
+            disabled={busy}
+          />
           <button
             type="button"
             className="btn btn-primary"
