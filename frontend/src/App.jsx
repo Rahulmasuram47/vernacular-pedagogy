@@ -21,15 +21,19 @@ export default function App() {
     setStatus("अनुवाद हो रहा है...");
     setWorksheet(null);
 
+    const startTime = performance.now();
+
     try {
       const data = await callTranslate(text);
+      const elapsedMs = Math.round(performance.now() - startTime);
+      console.log(`Translation round trip: ${elapsedMs}ms`);
+
       setHindiResult(data.hindi ?? text);
       setSantaliResult(data.santali ?? "");
-      setStatus(
-        data.confidence === "exact"
-          ? "अनुवाद तैयार है। पूर्ण मिलान।"
-          : "अनुवाद तैयार है। आंशिक मिलान।"
-      );
+
+      const matchLabel =
+        data.confidence === "exact" ? "पूर्ण मिलान" : "आंशिक मिलान";
+      setStatus(`अनुवाद तैयार है। ${matchLabel} (${elapsedMs} ms)`);
     } catch (err) {
       setStatus(
         "सर्वर से जुड़ नहीं पाए। बैकएंड चल रहा है या नहीं, जाँचें।"
@@ -39,12 +43,10 @@ export default function App() {
     }
   }
 
-  // Called by MicButton when speech recognition returns a transcript.
   const handleMicResult = useCallback((transcript) => {
     setHindiText(transcript);
   }, []);
 
-  // Called by MicButton for status messages (listening, errors, etc).
   const handleMicStatus = useCallback((message) => {
     setStatus(message);
   }, []);
@@ -100,7 +102,7 @@ export default function App() {
             onClick={handleTranslate}
             disabled={busy}
           >
-            अनुवाद करें
+            {busy ? "अनुवाद हो रहा है..." : "अनुवाद करें"}
           </button>
         </div>
       </section>
