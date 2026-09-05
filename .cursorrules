@@ -1,0 +1,73 @@
+PROJECT: SIH Problem Statement 042 — AI-Powered Vernacular Pedagogy and Real-Time
+Translation Tool for Mother Tongue-Based Primary Education (Govt. of Jharkhand)
+
+GOAL: A working prototype for Hindi → Santali (Ol Chiki script) translation for
+primary-school teachers/students, with voice input, bilingual worksheet generation,
+and full offline operation on a low-end Android tablet.
+
+TRIBAL LANGUAGE: Santali only. Do not implement any other tribal language.
+
+HARD CONSTRAINTS (never violate these without asking me first):
+- NO paid APIs. NO API keys requiring billing. NO cloud translation services
+  (no Google Translate API, no Bhashini, no OpenAI/Anthropic calls in the CORE
+  translation pipeline).
+- The CORE demo flow (Hindi input → Santali translation → bilingual display →
+  worksheet generation) MUST work with zero internet connection.
+- Any feature that truly needs internet (e.g. optional cloud backup) must be
+  clearly isolated, toggleable, and never block the core demo.
+- Keep dependencies minimal. Prefer standard libraries over heavy frameworks.
+- Optimize for low-end Android hardware: small memory footprint, no large ML
+  models bundled unless quantized and genuinely lightweight.
+- Modular architecture: adding a second tribal language later should only mean
+  adding a new dictionary/data file, not rewriting the pipeline.
+
+PROJECT FOLDER STRUCTURE (already created — do not restructure without asking):
+  vernacular_pedagogy/
+    frontend/
+    backend/
+    data/
+    tests/
+    database/
+    models/
+    docs/
+    project_context.md
+    README.md
+
+CORE USER FLOW (must match exactly):
+  1. Teacher/student enters or speaks Hindi.
+  2. If voice input: Hindi speech → Hindi text (on-device/local STT).
+  3. Hindi text → Santali text (local dictionary/rule-based translation engine).
+  4. Display BOTH Hindi and Santali text together on screen.
+  5. Optional: play translated audio (pre-recorded clips, not live TTS synthesis).
+  6. Teacher generates a bilingual (Hindi + Santali) worksheet.
+  7. Worksheet is viewable/usable fully offline.
+
+PRIORITY ORDER (P0 must work, P1 important, P2 skip unless time remains):
+  P0: Hindi text input, language confirmation (Santali fixed), Hindi→Santali
+      translation, bilingual display, voice input, fast pipeline (~3s target),
+      worksheet generation, offline operation, simple demo-ready UI.
+  P1: text-to-speech (pre-recorded), translation history, basic topic/lesson
+      picker, save/download worksheet, local storage.
+  P2 (skip for now): multiple languages, personalization, analytics, gamification,
+      pronunciation scoring, cloud sync, complex auth.
+
+UI RULES:
+- Simple enough for a primary-school teacher with no tech background.
+- Large buttons, large readable text, clear Hindi labels, minimal navigation.
+- One obvious microphone button, one obvious "translate" action, one obvious
+  "generate worksheet" action.
+- No decorative animations, no unnecessary UI complexity.
+
+DEVELOPMENT RULES:
+- Inspect existing code before modifying anything.
+- Do not rewrite working code unless explicitly asked.
+- Do not delete existing functionality.
+- Modify only the files relevant to the current task — nothing else.
+- Reuse existing components/utilities instead of duplicating logic.
+- Keep the architecture simple; favor a working prototype over "clever" code.
+- Do not introduce paid services or new heavy dependencies without asking me first.
+- Never assume internet connectivity is available.
+- After making changes, tell me exactly how to test them locally.
+
+WHEN UNSURE: stop and ask me a specific question rather than guessing and
+generating a large unrequested change.

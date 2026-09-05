@@ -1,0 +1,137 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: "Noto Sans Devanagari", "Noto Sans", sans-serif;
+  background: #f4f1ea;
+  color: #1f1f1f;
+}
+
+.page {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 20px 16px 40px;
+}
+
+.header h1 {
+  font-size: 1.75rem;
+  margin: 0 0 8px;
+}
+
+.lang-note {
+  margin: 0 0 20px;
+  font-size: 1.1rem;
+}
+
+.card {
+  background: #fff;
+  border: 2px solid #d7d0c4;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.input {
+  width: 100%;
+  font-size: 1.25rem;
+  line-height: 1.5;
+  padding: 12px;
+  border: 2px solid #8a8174;
+  border-radius: 6px;
+  resize: vertical;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  min-height: 52px;
+  padding: 12px 20px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 2px solid #333;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  background: #1b6b4a;
+  color: #fff;
+  border-color: #145238;
+  flex: 1;
+}
+
+.btn-mic {
+  background: #fff;
+  min-width: 140px;
+}
+
+.btn-secondary {
+  margin-top: 16px;
+  width: 100%;
+  background: #1e4d8c;
+  color: #fff;
+  border-color: #16386a;
+}
+
+.bilingual {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.pane {
+  border: 1px solid #d7d0c4;
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 120px;
+}
+
+.pane h3,
+.card h2 {
+  margin-top: 0;
+}
+
+.result-text {
+  font-size: 1.35rem;
+  margin: 0;
+  word-break: break-word;
+}
+
+.santali {
+  font-family: "Noto Sans Ol Chiki", "Noto Sans", sans-serif;
+}
+
+.status {
+  font-size: 1.05rem;
+}
+
+@media (max-width: 640px) {
+  .bilingual {
+    grid-template-columns: 1fr;
+  }
+}
