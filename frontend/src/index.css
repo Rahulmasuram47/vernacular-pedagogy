@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "Noto Sans Ol Chiki";
+  src: url("/fonts/NotoSansOlChiki-Regular.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -64,9 +72,10 @@ body {
 .card {
   background: #fff;
   border: 2px solid #d7d0c4;
-  border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 16px;
+  border-radius: 12px;
+  padding: 20px 18px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
 .label {
@@ -98,13 +107,15 @@ select.input {
 }
 
 .btn {
-  min-height: 52px;
-  padding: 12px 20px;
+  min-height: 54px;
+  padding: 13px 22px;
   font-size: 1.15rem;
   font-weight: 700;
-  border-radius: 8px;
+  border-radius: 10px;
   border: 2px solid #333;
   cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
 }
 
 .btn:disabled {
@@ -119,9 +130,13 @@ select.input {
   flex: 1;
 }
 
+.btn-primary:active:not(:disabled) {
+  background: #145238;
+}
+
 .btn-mic {
   background: #fff;
-  min-width: 140px;
+  min-width: 145px;
 }
 
 .btn-secondary {
@@ -130,6 +145,10 @@ select.input {
   background: #1e4d8c;
   color: #fff;
   border-color: #16386a;
+}
+
+.btn-secondary:active:not(:disabled) {
+  background: #16386a;
 }
 
 .bilingual {
@@ -165,6 +184,31 @@ h2 {
   font-size: 1.6em;
   font-weight: 600;
   color: #145238;
+}
+
+.result-placeholder {
+  color: #7a7369;
+  font-size: 1.05rem;
+  font-style: italic;
+  font-family: "Noto Sans Devanagari", "Noto Sans", sans-serif;
+  display: inline-block;
+  line-height: 1.4;
+}
+
+.result-unconfirmed {
+  font-family: "Noto Sans Devanagari", "Noto Sans", sans-serif;
+  font-size: 1.05rem;
+  color: #92400e;
+  line-height: 1.4;
+}
+
+.unconfirmed-warning {
+  display: inline-block;
+  background: #fffbeb;
+  border: 1px dashed #d97706;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-weight: 600;
 }
 
 .status {
@@ -297,3 +341,321 @@ h2 {
   50% { opacity: 0.6; }
   100% { opacity: 1; }
 }
+.status-banner {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #1e293b;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 8px 0 16px;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.status-banner.status-warning {
+  background: #fffbeb;
+  border: 1.5px solid #f59e0b;
+  color: #92400e;
+}
+
+.status-banner.status-success {
+  background: #ecfdf5;
+  border: 1.5px solid #10b981;
+  color: #065f46;
+}
+
+.status-banner.status-info {
+  background: #eff6ff;
+  border: 1.5px solid #3b82f6;
+  color: #1e40af;
+}
+
+/* Navigation Tab Switcher */
+.view-switcher {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tab-btn {
+  flex: 1;
+  min-height: 52px;
+  padding: 12px 14px;
+  font-size: 1.08rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 2px solid #b8b0a2;
+  background: #ebe6dd;
+  color: #4a453e;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.tab-btn:hover {
+  background: #dfd8cd;
+  border-color: #9c9384;
+}
+
+.tab-btn.active {
+  background: #1b6b4a;
+  color: #ffffff;
+  border-color: #145238;
+  box-shadow: 0 3px 8px rgba(27, 107, 74, 0.35);
+  font-weight: 800;
+}
+
+/* Pane Header & TTS Button */
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.pane-header h3 {
+  margin: 0;
+}
+
+.btn-tts-icon {
+  background: #eef2f7;
+  border: 1.5px solid #a8c0de;
+  border-radius: 50%;
+  width: 46px;
+  height: 46px;
+  min-width: 46px;
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1.25rem;
+  transition: background 0.15s, transform 0.1s;
+  touch-action: manipulation;
+}
+
+.btn-tts-icon:hover,
+.btn-tts-icon:active {
+  background: #dbe6f2;
+  transform: scale(0.95);
+}
+
+.btn-tts-icon:hover,
+.btn-tts-icon:active {
+  background: #dbe6f2;
+}
+
+/* Flashcards Section */
+.flashcard-section {
+  padding: 20px;
+}
+
+.flashcard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.flashcard-header h2 {
+  margin: 0;
+}
+
+.flashcard-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.label-inline {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.select-compact {
+  flex: 1;
+  min-width: 180px;
+  padding: 8px 12px;
+  font-size: 1.05rem;
+}
+
+.card-counter {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #555;
+  padding: 6px 12px;
+  background: #eee;
+  border-radius: 6px;
+}
+
+.flashcard-box {
+  background: #faf8f5;
+  border: 2px solid #c7beaf;
+  border-radius: 12px;
+  padding: 20px;
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  transition: transform 0.15s, border-color 0.2s;
+  user-select: none;
+}
+
+.flashcard-box:active {
+  transform: scale(0.99);
+}
+
+.flashcard-revealed {
+  border-color: #1b6b4a;
+  background: #fdfefd;
+}
+
+.flashcard-badge {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.95rem;
+  color: #666;
+  border-bottom: 1px solid #e0dacf;
+  padding-bottom: 8px;
+}
+
+.tap-hint {
+  font-size: 0.85rem;
+  color: #1e4d8c;
+  font-weight: 600;
+}
+
+.flashcard-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 20px 0;
+}
+
+.flashcard-side {
+  padding: 12px;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+}
+
+.flashcard-lang-tag {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #777;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.flashcard-word-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.flashcard-word {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #222;
+}
+
+.flashcard-santali.hidden {
+  opacity: 0.4;
+  letter-spacing: 4px;
+}
+
+.flashcard-santali.revealed {
+  border-color: #1b6b4a;
+  background: #f1f8f4;
+}
+
+.flashcard-nav {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.flashcard-btn {
+  flex: 1;
+  min-height: 52px;
+  font-size: 1.05rem;
+  touch-action: manipulation;
+}
+
+.flashcard-flip-button {
+  min-height: 52px;
+  font-size: 1.15rem;
+  margin-top: 14px;
+  width: 100%;
+  touch-action: manipulation;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid #8a8174;
+  color: #444;
+}
+
+/* Confidence Badges */
+.confidence-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 6px;
+  margin-top: 10px;
+  border: 1.5px solid transparent;
+}
+
+.confidence-badge.confidence-high {
+  background: #e7f5ee;
+  color: #145238;
+  border-color: #1b6b4a;
+}
+
+.confidence-badge.confidence-medium {
+  background: #fff8e6;
+  color: #7a5800;
+  border-color: #e0a800;
+}
+
+.confidence-badge.confidence-low {
+  background: #fde8e8;
+  color: #9b1c1c;
+  border-color: #e02424;
+}
+
+/* Confirmation Banner */
+.confirmation-banner {
+  background: #fff4e5;
+  border: 2px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 12px 0;
+}
+
+.confirmation-banner p {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: #78350f;
+}
+
+.confirmation-actions {
+  display: flex;
+  gap: 10px;
+}

@@ -6,15 +6,14 @@ from routes.worksheet import router as worksheet_router
 
 app = FastAPI(title="Vernacular Pedagogy API")
 
+# NOTE: allow_origins is set to "*" (allow all) so that the app running on
+# a phone/tablet (Capacitor WebView) can reach this backend during testing.
+# allow_credentials must be False when allow_origins is "*" — this is a
+# FastAPI/Starlette requirement (the two together are invalid together).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:4173",
-        "http://127.0.0.1:4173",
-    ],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Allows plain http:// traffic for local network testing only.
+  Place this file at: android/app/src/main/res/xml/network_security_config.xml
+  (create the xml folder inside res if it doesn't exist yet)
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Replace with your laptop's actual local IP from ipconfig -->
+        <domain includeSubdomains="true">192.168.1.6</domain>
+    </domain-config>
+</network-security-config>
