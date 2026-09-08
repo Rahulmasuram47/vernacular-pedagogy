@@ -2,6 +2,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { callTranslate, fetchWorksheetCategories, callWorksheet } from "./api.js";
 import MicButton from "./components/MicButton.jsx";
 import Flashcards from "./components/Flashcards.jsx";
+import VoiceDialogue from "./components/VoiceDialogue.jsx";
+import CurriculumLibrary from "./components/CurriculumLibrary.jsx";
+import { playSantaliAudio, hasSantaliAudio } from "./audio/santaliAudio.js";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 import { Filesystem, Directory } from "@capacitor/filesystem";
@@ -35,7 +38,7 @@ const CATEGORY_LABELS = {
 };
 
 export default function App() {
-  const [currentView, setCurrentView] = useState("main");
+  const [currentView, setCurrentView] = useState("home");
 
   // Translation state
   const [hindiText, setHindiText] = useState("");
@@ -225,7 +228,7 @@ export default function App() {
   }, []);
 
   // ------------------------------------------------------------
-  // SANTALI TEXT-TO-SPEECH
+  // SANTALI AUDIO / TEXT-TO-SPEECH
   // ------------------------------------------------------------
 
   async function speakSantali(text) {
@@ -236,7 +239,18 @@ export default function App() {
       return false;
     }
 
-    // Step 1: Check native Capacitor TTS support
+    // Step 1: Pre-recorded authentic Santali audio clips
+    if (hasSantaliAudio(value)) {
+      setStatus("🔊 संताली ऑडियो बज रहा है...");
+      const res = await playSantaliAudio(
+        value,
+        () => setStatus("🔊 संताली ऑडियो बज रहा है..."),
+        () => setStatus("✓ संताली ऑडियो पूर्ण हुआ")
+      );
+      if (res.played) return true;
+    }
+
+    // Step 2: Native Android TTS (if device OEM provides Santali TTS pack)
     try {
       if (TextToSpeech && typeof TextToSpeech.getSupportedLanguages === "function") {
         const langResult = await TextToSpeech.getSupportedLanguages().catch(() => null);
@@ -245,25 +259,20 @@ export default function App() {
           (l) => l.startsWith("sat") || l.includes("olck") || l.includes("santali")
         );
 
-        if (!hasSantali && languages.length > 0) {
-          // Native engine explicitly exists but lacks Santali voice
-          console.warn("[TTS] Native TTS available but Santali (sat) voice pack is not installed.");
-          setStatus("संताली ऑडियो इस डिवाइस पर उपलब्ध नहीं है (केवल पाठ समर्थित)।");
-          return false;
+        if (hasSantali) {
+          await TextToSpeech.speak({
+            text: value,
+            lang: "sat-IN",
+            rate: 0.9,
+          });
+          return true;
         }
       }
-
-      await TextToSpeech.speak({
-        text: value,
-        lang: "sat-IN",
-        rate: 0.9,
-      });
-      return true;
     } catch (nativeError) {
       console.warn("Santali native TTS unavailable:", nativeError);
     }
 
-    // Step 2: Browser fallback with voice check
+    // Step 3: Browser fallback with voice check
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       try {
         const voices = window.speechSynthesis.getVoices?.() || [];
@@ -286,7 +295,7 @@ export default function App() {
     }
 
     // Honest feedback - never silent fail
-    setStatus("संताली ऑडियो इस डिवाइस पर उपलब्ध नहीं है (केवल पाठ समर्थित)।");
+    setStatus("संताली ऑडियो इस वाक्य के लिए उपलब्ध नहीं है (मानक पाठ प्रदर्शित है)।");
     return false;
   }
 
@@ -532,10 +541,28 @@ export default function App() {
 
   function handleOpenSavedWorksheet(saved) {
     setWorksheet(saved);
-
     setShowSaved(false);
-
     setStatus("सहेजा गया कार्यपत्रक खोला गया।");
+  }
+
+  // ------------------------------------------------------------
+  // CURRICULUM WORKFLOW HANDLERS
+  // ------------------------------------------------------------
+
+  function handleCurriculumToWorksheet(item) {
+    if (item.worksheetCategory) {
+      setSelectedCategory(item.worksheetCategory);
+    }
+    setCurrentView("worksheets");
+    setStatus(`पाठ्यक्रम से चुना गया: ${item.topic} (अब कार्यपत्रक बनाएँ दबाएँ)`);
+  }
+
+  function handleCurriculumToFlashcards() {
+    setCurrentView("flashcards");
+  }
+
+  function handleCurriculumToVoice() {
+    setCurrentView("voice");
   }
 
   // ------------------------------------------------------------
@@ -592,15 +619,53 @@ export default function App() {
           VIEW SWITCHER
       ------------------------------------------------------- */}
 
+      {/* -------------------------------------------------------
+          VIEW SWITCHER (PHASE 7 - 6 CORE VIEWS)
+      ------------------------------------------------------- */}
+
       <div className="view-switcher no-print">
         <button
           type="button"
           className={`tab-btn ${
-            currentView === "main" ? "active" : ""
+            currentView === "home" ? "active" : ""
           }`}
-          onClick={() => setCurrentView("main")}
+          onClick={() => setCurrentView("home")}
+          aria-label="गृह पृष्ठ (Home)"
         >
-          📖 अनुवाद एवं कार्यपत्रक
+          🏠 मुख्य (Home)
+        </button>
+
+        <button
+          type="button"
+          className={`tab-btn ${
+            currentView === "voice" ? "active" : ""
+          }`}
+          onClick={() => setCurrentView("voice")}
+          aria-label="ध्वनि संवाद (Voice Dialogue)"
+        >
+          🎙️ ध्वनि संवाद (Voice)
+        </button>
+
+        <button
+          type="button"
+          className={`tab-btn ${
+            currentView === "translate" ? "active" : ""
+          }`}
+          onClick={() => setCurrentView("translate")}
+          aria-label="अनुवाद (Translate)"
+        >
+          📖 अनुवाद (Translate)
+        </button>
+
+        <button
+          type="button"
+          className={`tab-btn ${
+            currentView === "curriculum" ? "active" : ""
+          }`}
+          onClick={() => setCurrentView("curriculum")}
+          aria-label="पाठ्यक्रम (Curriculum)"
+        >
+          📚 पाठ्यक्रम (Curriculum)
         </button>
 
         <button
@@ -609,23 +674,357 @@ export default function App() {
             currentView === "flashcards" ? "active" : ""
           }`}
           onClick={() => setCurrentView("flashcards")}
+          aria-label="फ्लैशकार्ड (Flashcards)"
         >
-          🗂️ फ्लैशकार्ड अभ्यास
+          🗂️ फ्लैशकार्ड (Flashcards)
+        </button>
+
+        <button
+          type="button"
+          className={`tab-btn ${
+            currentView === "worksheets" ? "active" : ""
+          }`}
+          onClick={() => setCurrentView("worksheets")}
+          aria-label="कार्यपत्रक (Worksheets)"
+        >
+          📄 कार्यपत्रक (Worksheets)
         </button>
       </div>
 
       {/* -------------------------------------------------------
-          MAIN / FLASHCARD VIEW
+          MODULAR SCREENS (Home, Voice, Translate, Curriculum, Flashcards, Worksheets)
       ------------------------------------------------------- */}
 
-      {currentView === "flashcards" ? (
-        <Flashcards
-          onBack={() => setCurrentView("main")}
+      {currentView === "home" ? (
+        <div className="home-screen-view no-print">
+          <section className="card home-hero-card">
+            <div className="home-hero-header">
+              <span className="home-hero-badge">🇮🇳 SIH26042 / PS 1042</span>
+              <h2>मातृभाषा आधारित बहुभाषी शिक्षण सहायक</h2>
+              <p className="home-hero-subtitle">
+                MTB-MLE Classroom Assistant: <strong>Hindi → Santali (ओल चिकी)</strong>
+              </p>
+            </div>
+
+            <div className="home-status-banner">
+              <span className="offline-dot" aria-hidden="true" />
+              <div className="home-status-text">
+                <strong>पूर्णतः ऑफ़लाइन कार्यरत (100% Offline Ready)</strong>
+                <p>सभी अनुवाद, पाठ्यक्रम, कार्यपत्रक एवं फ्लैशकार्ड बिना इंटरनेट के तुरंत उपलब्ध हैं।</p>
+              </div>
+            </div>
+
+            <h3 className="quick-actions-title">त्वरित कक्षा उपकरण (Quick Actions)</h3>
+            <div className="home-quick-grid">
+              <button
+                type="button"
+                className="home-tool-card voice-card"
+                onClick={() => setCurrentView("voice")}
+              >
+                <span className="tool-icon">🎙️</span>
+                <span className="tool-title">ध्वनि संवाद (Voice)</span>
+                <span className="tool-desc">कक्षा में हिंदी में बोलें और संताली उच्चारण सुनें (Latency &lt; 3s)</span>
+              </button>
+
+              <button
+                type="button"
+                className="home-tool-card translate-card"
+                onClick={() => setCurrentView("translate")}
+              >
+                <span className="tool-icon">📖</span>
+                <span className="tool-title">द्विभाषी अनुवाद</span>
+                <span className="tool-desc">कक्षा निर्देश, अभिवादन एवं संख्या शब्दों का स्थानीय अनुवाद</span>
+              </button>
+
+              <button
+                type="button"
+                className="home-tool-card curriculum-card"
+                onClick={() => setCurrentView("curriculum")}
+              >
+                <span className="tool-icon">📚</span>
+                <span className="tool-title">FLN पाठ्यक्रम</span>
+                <span className="tool-desc">कक्षा 1 & 2 के लिए निपुण भारत प्रतिनिधि शिक्षण प्रतिफल पुस्तकालय</span>
+              </button>
+
+              <button
+                type="button"
+                className="home-tool-card flashcard-card"
+                onClick={() => setCurrentView("flashcards")}
+              >
+                <span className="tool-icon">🗂️</span>
+                <span className="tool-title">दृश्य फ्लैशकार्ड</span>
+                <span className="tool-desc">प्रत्येक शब्द एवं संख्या के वास्तविक दृश्य चित्र एवं उच्चारण</span>
+              </button>
+
+              <button
+                type="button"
+                className="home-tool-card worksheet-card"
+                onClick={() => setCurrentView("worksheets")}
+              >
+                <span className="tool-icon">📄</span>
+                <span className="tool-title">कार्यपत्रक एवं PDF</span>
+                <span className="tool-desc">छात्र अभ्यास के लिए द्विभाषी प्रिंट-रेडी PDF कार्यपत्रक बनाएँ</span>
+              </button>
+            </div>
+          </section>
+
+          {/* RECENT ACTIVITY SUMMARY */}
+          {history.length > 0 && (
+            <section className="card home-recent-card">
+              <h3>हाल ही में अनुवादित शब्द (Recent Translations)</h3>
+              <div className="home-recent-list">
+                {history.slice(0, 4).map((item, idx) => (
+                  <div key={idx} className="home-recent-item">
+                    <span className="recent-hindi">{item.hindi}</span>
+                    <span className="recent-arrow">→</span>
+                    <span className="recent-santali santali">{item.santali}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      ) : currentView === "curriculum" ? (
+        <CurriculumLibrary
+          onSelectForWorksheet={handleCurriculumToWorksheet}
+          onSelectForFlashcards={handleCurriculumToFlashcards}
+          onSelectForVoice={handleCurriculumToVoice}
+          onBack={() => setCurrentView("home")}
         />
+      ) : currentView === "voice" ? (
+        <VoiceDialogue onBack={() => setCurrentView("home")} />
+      ) : currentView === "flashcards" ? (
+        <Flashcards
+          onBack={() => setCurrentView("home")}
+        />
+      ) : currentView === "worksheets" ? (
+        <>
+          {/* ---------------------------------------------------
+              WORKSHEET GENERATOR SCREEN
+          --------------------------------------------------- */}
+          <section className="card no-print">
+            <div className="worksheet-generator-header">
+              <h2>द्विभाषी कार्यपत्रक बनाएँ (Bilingual Worksheets)</h2>
+              <p className="worksheet-subtitle">
+                कक्षा 1 और 2 के FLN प्रतिफल के अनुसार प्रिंट-रेडी कार्यपत्रक तैयार करें
+              </p>
+            </div>
+
+            <label
+              htmlFor="topic-select"
+              className="label"
+            >
+              विषय चुनें (Select Topic)
+            </label>
+
+            <select
+              id="topic-select"
+              className="input"
+              value={selectedCategory}
+              onChange={(e) =>
+                setSelectedCategory(e.target.value)
+              }
+            >
+              {categories.map((cat) => (
+                <option
+                  key={cat}
+                  value={cat}
+                >
+                  {CATEGORY_LABELS[cat] ?? cat}
+                </option>
+              ))}
+            </select>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleGenerateWorksheet}
+              disabled={worksheetBusy}
+            >
+              {worksheetBusy
+                ? "कार्यपत्रक बन रहा है..."
+                : "कार्यपत्रक बनाएँ"}
+            </button>
+
+            <hr className="section-divider" />
+
+            {/* Saved worksheets */}
+            <button
+              type="button"
+              className="btn btn-link"
+              onClick={() =>
+                setShowSaved((v) => !v)
+              }
+            >
+              {showSaved
+                ? "सहेजे गए कार्यपत्रक छिपाएँ"
+                : `सहेजे गए कार्यपत्रक देखें (${savedWorksheets.length})`}
+            </button>
+
+            {showSaved && (
+              <div className="history-panel">
+                {savedWorksheets.length === 0 && (
+                  <p>
+                    अभी कोई कार्यपत्रक सहेजा नहीं गया।
+                  </p>
+                )}
+
+                {savedWorksheets.map((saved) => (
+                  <div
+                    key={saved.savedAt}
+                    className="history-item"
+                  >
+                    <div>
+                      <strong>
+                        {saved.title}
+                      </strong>
+                    </div>
+
+                    <div>
+                      <button
+                        type="button"
+                        className="btn btn-small"
+                        onClick={() =>
+                          handleOpenSavedWorksheet(saved)
+                        }
+                      >
+                        खोलें
+                      </button>
+
+                      <button
+                        type="button"
+                        className="btn btn-small btn-danger"
+                        onClick={() =>
+                          handleDeleteSaved(
+                            saved.savedAt
+                          )
+                        }
+                      >
+                        हटाएँ
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* WORKSHEET DISPLAY & PRINT AREA */}
+          {worksheet && (
+            <section
+              className="card worksheet"
+              ref={worksheetRef}
+            >
+              {/* PRINT / WORKSHEET HEADER */}
+              <div className="worksheet-print-header">
+                <div className="worksheet-title-row">
+                  <h2>{worksheet.title}</h2>
+                  <div className="worksheet-meta-pills">
+                    {worksheet.grade && (
+                      <span className="worksheet-pill pill-grade">
+                        {worksheet.grade}
+                      </span>
+                    )}
+                    {worksheet.subject && (
+                      <span className="worksheet-pill pill-subject">
+                        {worksheet.subject}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* STUDENT INFO FIELDS (Printed) */}
+                <div className="worksheet-student-info">
+                  <div className="info-field">
+                    <span>विद्यार्थी का नाम:</span>
+                    <span className="underline-blank"></span>
+                  </div>
+                  <div className="info-field">
+                    <span>दिनांक:</span>
+                    <span className="underline-blank small"></span>
+                  </div>
+                  <div className="info-field">
+                    <span>कक्षा / रोल नं:</span>
+                    <span className="underline-blank small"></span>
+                  </div>
+                </div>
+
+                {/* OUTCOME BOX */}
+                {worksheet.learningOutcome && (
+                  <div className="worksheet-outcome-box">
+                    <span className="outcome-tag">
+                      🎯 प्रतिफल: {worksheet.learningOutcome}
+                    </span>
+                    <p className="outcome-text">
+                      {worksheet.outcomeDescription}
+                    </p>
+                  </div>
+                )}
+
+                {/* BILINGUAL INSTRUCTIONS */}
+                <div className="worksheet-instructions-box">
+                  <p className="inst-hindi">
+                    <strong>{worksheet.instructionsHindi || "निर्देश: नीचे दिए गए शब्दों को पढ़ें और सामने संताली में लिखें।"}</strong>
+                  </p>
+                  <p className="inst-santali santali">
+                    {worksheet.instructionsSantali || "ᱫᱤᱥᱟᱹ: ᱞᱟᱛᱟᱨ ᱨᱮ ᱚᱞ ᱟᱠᱟᱱ ᱟᱹᱲᱟᱹ ᱠᱚ ᱯᱟᱲᱦᱟᱣ ᱢᱮ ᱟᱨ ᱥᱟᱢᱟᱝ ᱨᱮ ᱚᱞ ᱢᱮ᱾"}
+                  </p>
+                </div>
+              </div>
+
+              {/* TABLE */}
+              <table className="worksheet-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: "30%" }}>हिंदी (Hindi)</th>
+                    <th style={{ width: "35%" }}>संताली (Ol Chiki)</th>
+                    <th style={{ width: "35%" }}>अभ्यास (छात्र स्वयं लिखें)</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {worksheet.items.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="ws-hindi-cell">{item.hindi}</td>
+                      <td className="santali ws-santali-cell">{item.santali}</td>
+                      <td className="practice-blank-cell">
+                        <div className="practice-writing-guide"></div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {/* WORKSHEET FOOTER */}
+              <div className="worksheet-footer-row">
+                <span>मूल्यांकन: ⭐ ⭐ ⭐ ⭐ ⭐</span>
+                <span>शिक्षक हस्ताक्षर: _______________</span>
+              </div>
+
+              <div className="actions no-print">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={handleExportPDF}
+                >
+                  📄 PDF डाउनलोड / साझा करें
+                </button>
+
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={handleSaveWorksheet}
+                >
+                  सहेजें
+                </button>
+              </div>
+            </section>
+          )}
+        </>
       ) : (
         <>
           {/* ---------------------------------------------------
-              HINDI INPUT
+              TRANSLATE SCREEN
           --------------------------------------------------- */}
 
           <section className="card no-print">
@@ -891,170 +1290,6 @@ export default function App() {
               </div>
             )}
           </section>
-
-          {/* ---------------------------------------------------
-              WORKSHEET
-          --------------------------------------------------- */}
-
-          <section className="card no-print">
-            <h2>द्विभाषी कार्यपत्रक बनाएँ</h2>
-
-            <label
-              htmlFor="topic-select"
-              className="label"
-            >
-              विषय चुनें
-            </label>
-
-            <select
-              id="topic-select"
-              className="input"
-              value={selectedCategory}
-              onChange={(e) =>
-                setSelectedCategory(e.target.value)
-              }
-            >
-              {categories.map((cat) => (
-                <option
-                  key={cat}
-                  value={cat}
-                >
-                  {CATEGORY_LABELS[cat] ?? cat}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              className="btn btn-secondary"
-              onClick={handleGenerateWorksheet}
-              disabled={worksheetBusy}
-            >
-              {worksheetBusy
-                ? "कार्यपत्रक बन रहा है..."
-                : "कार्यपत्रक बनाएँ"}
-            </button>
-
-            <hr className="section-divider" />
-
-            {/* Saved worksheets */}
-
-            <button
-              type="button"
-              className="btn btn-link"
-              onClick={() =>
-                setShowSaved((v) => !v)
-              }
-            >
-              {showSaved
-                ? "सहेजे गए कार्यपत्रक छिपाएँ"
-                : `सहेजे गए कार्यपत्रक देखें (${savedWorksheets.length})`}
-            </button>
-
-            {showSaved && (
-              <div className="history-panel">
-                {savedWorksheets.length === 0 && (
-                  <p>
-                    अभी कोई कार्यपत्रक सहेजा नहीं गया।
-                  </p>
-                )}
-
-                {savedWorksheets.map((saved) => (
-                  <div
-                    key={saved.savedAt}
-                    className="history-item"
-                  >
-                    <div>
-                      <strong>
-                        {saved.title}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <button
-                        type="button"
-                        className="btn btn-small"
-                        onClick={() =>
-                          handleOpenSavedWorksheet(saved)
-                        }
-                      >
-                        खोलें
-                      </button>
-
-                      <button
-                        type="button"
-                        className="btn btn-small btn-danger"
-                        onClick={() =>
-                          handleDeleteSaved(
-                            saved.savedAt
-                          )
-                        }
-                      >
-                        हटाएँ
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-
-          {/* ---------------------------------------------------
-              WORKSHEET RESULT
-          --------------------------------------------------- */}
-
-          {worksheet && (
-            <section
-              className="card worksheet"
-              ref={worksheetRef}
-            >
-              <h2>{worksheet.title}</h2>
-
-              <table className="worksheet-table">
-                <thead>
-                  <tr>
-                    <th>हिंदी</th>
-                    <th>संताली</th>
-                    <th>अभ्यास (लिखें)</th>
-                  </tr>
-                </thead>
-
-                <tbody>
-                  {worksheet.items.map(
-                    (item, idx) => (
-                      <tr key={idx}>
-                        <td>{item.hindi}</td>
-
-                        <td className="santali">
-                          {item.santali}
-                        </td>
-
-                        <td className="practice-blank"></td>
-                      </tr>
-                    )
-                  )}
-                </tbody>
-              </table>
-
-              <div className="actions no-print">
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  onClick={handleExportPDF}
-                >
-                  📄 PDF डाउनलोड / साझा करें
-                </button>
-
-                <button
-                  type="button"
-                  className="btn btn-secondary"
-                  onClick={handleSaveWorksheet}
-                >
-                  सहेजें
-                </button>
-              </div>
-            </section>
-          )}
         </>
       )}
     </div>
